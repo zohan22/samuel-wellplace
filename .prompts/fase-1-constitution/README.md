@@ -7,9 +7,7 @@
 
 ## 🎯 ¿Qué es esta fase?
 
-En esta fase defines la **idea central del proyecto** antes de escribir especific
-
-aciones técnicas. Generas documentación de negocio que será la base para PRD y SRS en Fase 2.
+En esta fase defines la **idea central del proyecto** antes de escribir especificaciones técnicas. Generas documentación de negocio que será la base para PRD y SRS en Fase 2.
 
 **Esta fase se enfoca en:**
 
@@ -28,9 +26,7 @@ aciones técnicas. Generas documentación de negocio que será la base para PRD 
 
 ## 📋 Cuándo usar esta fase
 
-\*\*Prerequis
-
-itos:\*\*
+\*\*Prerequisitos:\*\*
 
 - ✅ Tienes una idea de producto/negocio clara
 - ✅ Sabes qué problema estás resolviendo
