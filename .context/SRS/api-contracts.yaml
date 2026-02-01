@@ -1,0 +1,636 @@
+openapi: 3.0.0
+info:
+  title: WellPlace API
+  version: 1.0.0
+  description: API para reservas obligatorias y pagos QR locales.
+servers:
+  - url: http://localhost:3000
+    description: Development
+  - url: https://staging.example.com
+    description: Staging
+  - url: https://api.example.com
+    description: Production
+security:
+  - BearerAuth: []
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Registrar nuevo usuario
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              full_name: 'Valentina Rojas'
+              email: 'valentina@example.com'
+              password: 'Secure123'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/login:
+    post:
+      summary: Login de usuario
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: 'valentina@example.com'
+              password: 'Secure123'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/businesses:
+    get:
+      summary: Listar negocios con busqueda y filtros
+      parameters:
+        - in: query
+          name: city
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: query
+          schema:
+            type: string
+        - in: query
+          name: price_min
+          schema:
+            type: number
+        - in: query
+          name: price_max
+          schema:
+            type: number
+        - in: query
+          name: services
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: people_count
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de negocios
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BusinessSummary'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/businesses/{businessId}:
+    get:
+      summary: Obtener detalle de negocio
+      parameters:
+        - in: path
+          name: businessId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Detalle de negocio
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/BusinessDetail'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/businesses/{businessId}/availability:
+    get:
+      summary: Ver disponibilidad por fecha y cupos
+      parameters:
+        - in: path
+          name: businessId
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+          required: true
+        - in: query
+          name: people_count
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Disponibilidad por horario
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AvailabilitySlot'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/reservations:
+    post:
+      summary: Crear reserva pending_payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCreateRequest'
+      responses:
+        '201':
+          description: Reserva creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Reservation'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/reservations/{reservationId}:
+    get:
+      summary: Obtener estado de reserva
+      parameters:
+        - in: path
+          name: reservationId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Estado de reserva
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Reservation'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/reservations/{reservationId}/cancel:
+    post:
+      summary: Cancelar reserva (politica 12 horas)
+      parameters:
+        - in: path
+          name: reservationId
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Reserva cancelada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Reservation'
+        '400':
+          description: Policy violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/payments/qr:
+    post:
+      summary: Generar QR de pago para una reserva
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentQrRequest'
+      responses:
+        '201':
+          description: QR generado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Payment'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/payments/{paymentId}/confirm:
+    post:
+      summary: Confirmar pago manual o automatico
+      parameters:
+        - in: path
+          name: paymentId
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentConfirmRequest'
+      responses:
+        '200':
+          description: Pago confirmado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Payment'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/reviews:
+    get:
+      summary: Listar reviews por negocio
+      parameters:
+        - in: query
+          name: business_id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Lista de reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Review'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Crear review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreateRequest'
+      responses:
+        '201':
+          description: Review creada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Review'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [full_name, email, password]
+      properties:
+        full_name:
+          type: string
+          maxLength: 120
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          minLength: 8
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [user, business_owner, admin]
+    BusinessSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        city:
+          type: string
+        price_from:
+          type: number
+        rating_avg:
+          type: number
+        is_available:
+          type: boolean
+    BusinessDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        phone:
+          type: string
+        rules:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        price_from:
+          type: number
+        rating_avg:
+          type: number
+    AvailabilitySlot:
+      type: object
+      properties:
+        slot_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        start_time:
+          type: string
+        end_time:
+          type: string
+        capacity_available:
+          type: integer
+    ReservationCreateRequest:
+      type: object
+      required: [business_id, date, time_slot, people_count]
+      properties:
+        business_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        time_slot:
+          type: string
+        people_count:
+          type: integer
+          minimum: 1
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        business_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        people_count:
+          type: integer
+        status:
+          type: string
+          enum: [pending_payment, confirmed, expired, canceled]
+        amount:
+          type: number
+        currency:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    PaymentQrRequest:
+      type: object
+      required: [reservation_id]
+      properties:
+        reservation_id:
+          type: string
+          format: uuid
+    PaymentConfirmRequest:
+      type: object
+      required: [confirmed_by]
+      properties:
+        confirmed_by:
+          type: string
+          format: uuid
+        notes:
+          type: string
+          maxLength: 200
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservation_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, expired]
+        amount:
+          type: number
+        currency:
+          type: string
+        qr_payload:
+          type: string
+        qr_image_url:
+          type: string
+    ReviewCreateRequest:
+      type: object
+      required: [reservation_id, rating]
+      properties:
+        reservation_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          maxLength: 1000
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        business_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+        comment:
+          type: string
+        status:
+          type: string
+          enum: [active, hidden, deleted]
+        created_at:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
